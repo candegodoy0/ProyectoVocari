@@ -174,8 +174,7 @@ def send_confirmation_email(nombre, correo, perfil, descripcion, cursos):
 
 
 def consumir_traduccion_drf(texto):
-    url = "http://127.0.0.1:8000/api/traducir/"
-
+    url = "https://proyectodjango-z7f4.onrender.com/api/traducir/"
     try:
         response = requests.get(url, params={'texto': texto})
         response.raise_for_status()
