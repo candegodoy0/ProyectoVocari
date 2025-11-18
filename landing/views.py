@@ -1,12 +1,14 @@
-import ssl
 import json
 import requests
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+from django.core.mail import EmailMultiAlternatives, get_connection
+from django.utils.html import strip_tags
+
 from django.shortcuts import render, redirect, get_object_or_404
-from django.core.mail import send_mail, get_connection
+from django.core.mail import send_mail
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.conf import settings
@@ -22,7 +24,6 @@ from rest_framework.response import Response
 from .serializers import ConsultaSerializer
 from .forms import TestForm, ContactoForm
 from .models import Consulta
-
 
 DESCRIPCIONES = {
     "Tecnológico": "Te interesa la tecnología la programación y la innovación.",
@@ -146,46 +147,36 @@ def send_confirmation_email(nombre, correo, perfil, descripcion, cursos):
     """
 
     try:
-        context = ssl._create_unverified_context()
-        with smtplib.SMTP_SSL(settings.EMAIL_HOST, settings.EMAIL_PORT, context=context) as server:
-            server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+        connection = get_connection()
 
-            # correo html al usuario
-            msg_user = MIMEMultipart("alternative")
-            msg_user["Subject"] = asunto_usuario
-            msg_user["From"] = settings.DEFAULT_FROM_EMAIL
-            msg_user["To"] = correo
-            msg_user.attach(MIMEText(cuerpo_html_usuario, "html", "utf-8"))
-            server.send_message(msg_user)
+        # mensaje para el usuario
+        msg_user = EmailMultiAlternatives(
+            asunto_usuario,
+            strip_tags(cuerpo_html_usuario),
+            settings.DEFAULT_FROM_EMAIL,
+            [correo],
+            connection=connection
+        )
+        msg_user.attach_alternative(cuerpo_html_usuario, "text/html")
 
-            # correo html al administrador
-            msg_admin = MIMEMultipart("alternative")
-            msg_admin["Subject"] = asunto_admin
-            msg_admin["From"] = settings.DEFAULT_FROM_EMAIL
-            msg_admin["To"] = settings.DEFAULT_FROM_EMAIL
-            msg_admin.attach(MIMEText(cuerpo_html_admin, "html", "utf-8"))
-            server.send_message(msg_admin)
+        # mensaje para el administrador
+        msg_admin = EmailMultiAlternatives(
+            asunto_admin,
+            strip_tags(cuerpo_html_admin),
+            settings.DEFAULT_FROM_EMAIL,
+            [settings.DEFAULT_FROM_EMAIL],
+            connection=connection
+        )
+        msg_admin.attach_alternative(cuerpo_html_admin, "text/html")
+
+        # envio de los dos mensajes en una sola transaccion
+        connection.send_messages([msg_user, msg_admin])
 
         return True
 
     except Exception as e:
-        print(f"ERROR AL ENVIAR EMAIL VOCARI: {e}")
+        print(f"ERROR AL ENVIAR EMAIL VOCARI (Django): {e}")
         return False
-
-
-def consumir_traduccion_drf(texto):
-    url = "https://proyectodjango-z7f4.onrender.com/api/traducir/"
-    try:
-        response = requests.get(url, params={'texto': texto})
-        response.raise_for_status()
-
-        data = response.json()
-        return data.get('traduccion')
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error al consumir api de traducción drf interna: {e}")
-        return None
-
 
 def index(request):
     # muestra el formulario del test, procesa las respuestas, calcula el perfil
@@ -306,6 +297,7 @@ def index(request):
         "correo": correo_val
     })
 
+
 def inscribir(request):
     # procesa la inscripcion a cursos seleccionados y envia los correos
     if request.method == "POST":
@@ -348,23 +340,29 @@ def inscribir(request):
         """
 
         try:
-            context = ssl._create_unverified_context()
-            with smtplib.SMTP_SSL(settings.EMAIL_HOST, settings.EMAIL_PORT, context=context) as server:
-                server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+            connection = get_connection()
 
-                msg_user = MIMEMultipart("alternative")
-                msg_user["Subject"] = asunto_u
-                msg_user["From"] = settings.DEFAULT_FROM_EMAIL
-                msg_user["To"] = correo
-                msg_user.attach(MIMEText(cuerpo_u, "html", "utf-8"))
-                server.send_message(msg_user)
+            # mensaje para el usuario
+            msg_user = EmailMultiAlternatives(
+                asunto_u,
+                strip_tags(cuerpo_u),
+                settings.DEFAULT_FROM_EMAIL,
+                [correo],
+                connection=connection
+            )
+            msg_user.attach_alternative(cuerpo_u, "text/html")
 
-                msg_admin = MIMEMultipart("alternative")
-                msg_admin["Subject"] = asunto_a
-                msg_admin["From"] = settings.DEFAULT_FROM_EMAIL
-                msg_admin["To"] = settings.DEFAULT_FROM_EMAIL
-                msg_admin.attach(MIMEText(cuerpo_a, "html", "utf-8"))
-                server.send_message(msg_admin)
+            # mensaje para el administrador
+            msg_admin = EmailMultiAlternatives(
+                asunto_a,
+                strip_tags(cuerpo_a),
+                settings.DEFAULT_FROM_EMAIL,
+                [settings.DEFAULT_FROM_EMAIL],
+                connection=connection
+            )
+            msg_admin.attach_alternative(cuerpo_a, "text/html")
+
+            connection.send_messages([msg_user, msg_admin])
 
             print("✅ Correos de inscripción enviados (usuario y admin).")
 
@@ -382,6 +380,7 @@ def inscribir(request):
 
     return render(request, "landing/inscribir.html", {})
 
+
 def registro(request):
     # maneja el registro de nuevos usuarios
     if request.method == "POST":
@@ -394,6 +393,7 @@ def registro(request):
 
     return render(request, "landing/registro.html", {'form': form})
 
+
 def login_redirect_view(request):
     # vista que redirige al usuario logueado segun su permiso
     if request.user.is_staff:
@@ -403,12 +403,14 @@ def login_redirect_view(request):
         # si no es amdin
         return redirect('no_admin_landing')
 
+
 def no_admin_landing(request):
     # pagina para usuarios logueados que no son admin
     if request.user.is_authenticated:
         return render(request, "landing/no_admin_landing.html")
     else:
         return redirect('index')
+
 
 def sobre_nosotros(request):
     return render(request, 'landing/sobre_nosotros.html', {})
@@ -505,7 +507,6 @@ def dashboard(request):
 
 
 class TraduccionAPIView(views.APIView):
-
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
@@ -524,7 +525,6 @@ class TraduccionAPIView(views.APIView):
                 {"error": "No se pudo obtener la traduccion de la api externa."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
-
 
         return Response({
             "texto_original": texto_a_traducir,
