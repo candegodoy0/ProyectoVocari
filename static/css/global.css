@@ -183,3 +183,14 @@ body, main {
 .modal-danger-header {
     background-color: #dc3545 !important;
 }
+
+.btn-enviar.loading-state,
+.btn-inscribir.loading-state {
+    background-color: #5a6268;
+    border: 1px solid #4e555b;
+    color: #ffffff;
+    cursor: wait !important;
+    opacity: 0.8;
+    pointer-events: none;
+    box-shadow: none;
+}
