@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/#database
 
 from pathlib import Path
 import os
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,7 +26,13 @@ SECRET_KEY = 'django-insecure-zj!0%rw92+bg&+jy3-w%$^6ly-fx=h^rw)$64pe$d6dor@!&'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['proyectodjango-z7f4.onrender.com']
+ALLOWED_HOSTS = [
+    'proyectodjango-z7f4.onrender.com',
+    '127.0.0.1',
+    'localhost'
+]
+
+IS_PROD_ENV = os.environ.get('RENDER') == 'true'
 
 
 # Application definition
@@ -74,10 +81,6 @@ WSGI_APPLICATION = 'mi_sitio.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-
-import dj_database_url
 
 DATABASES = {
 'default': dj_database_url.config(
@@ -89,7 +92,6 @@ ssl_require=True
 
 
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -108,7 +110,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'es'
 
@@ -119,10 +120,7 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-
+# Static files
 
 STATIC_URL = 'static/'
 
@@ -132,17 +130,19 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+if IS_PROD_ENV:
+    EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
 EMAIL_HOST = 'c2280296.ferozo.com'
-EMAIL_PORT = 465
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = True
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
 EMAIL_HOST_USER = 'candela.godoy@lalupitacontenidos.site'
 EMAIL_HOST_PASSWORD = 'Cande2025/'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-EMAIL_TIMEOUT = 90
-
+EMAIL_TIMEOUT = 10
 
 LOGIN_REDIRECT_URL = 'login_redirect_view'
 LOGOUT_REDIRECT_URL = '/'
-

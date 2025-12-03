@@ -3,12 +3,9 @@ import requests
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
-from django.core.mail import EmailMultiAlternatives, get_connection
+from django.core.mail import EmailMultiAlternatives, get_connection, send_mail
 from django.utils.html import strip_tags
-
 from django.shortcuts import render, redirect, get_object_or_404
-from django.core.mail import send_mail
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.conf import settings
@@ -16,7 +13,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import user_passes_test
-
 from rest_framework import viewsets, views, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -41,8 +37,7 @@ CURSOS = {
 
 
 def calcular_perfil(data):
-    # calcula el perfil vocacional basado en las respuestas del test
-    # si hay empate, devuelve todos los perfiles ganadores
+    # calcula el perfil vocacional basado en las respuestas
     puntajes = {
         "Tecnológico": 0, "Creativo/Artístico": 0, "Social/Humanístico": 0, "Científico/Analítico": 0
     }
@@ -54,11 +49,12 @@ def calcular_perfil(data):
     max_p = max(puntajes.values())
     ganadores = [p for p, v in puntajes.items() if v == max_p]
 
+    # devuelve los ganadores o el perfil unico
     return ", ".join(ganadores) if len(ganadores) > 1 else ganadores[0] if ganadores else "Indefinido"
 
 
 def get_translation(text, target_lang='en'):
-    # api externa para traducir texto del español al ingles
+    # api externa para traducir texto
     API_URL = "https://api.mymemory.translated.net/get"
     params = {
         'q': text,
@@ -72,15 +68,21 @@ def get_translation(text, target_lang='en'):
         if data.get('responseStatus') == 200 and 'translatedText' in data.get('responseData', {}):
             return data['responseData']['translatedText']
         else:
-            print(f"Error en api mymemory: {data.get('responseDetails', 'Error desconocido')}")
+            print(f"Error en API MyMemory: {data.get('responseDetails', 'Error desconocido')}")
             return None
     except requests.exceptions.RequestException as e:
-        print(f"Error de conexión con la api de traduccion: {e}")
+        print(f"Error de conexión con la API de traducción: {e}")
         return None
 
 
 def send_contacto_email(nombre, correo, mensaje):
-    # envia el correo al administrador cuando un usuario usa el formulario de contacto
+    # envia el correo al administrador con el mensaje de contacto
+
+    #  si es produccion, omite el envio
+    if settings.IS_PROD_ENV:
+        print("⚠️ Envío de correo de contacto omitido en Producción (Render).")
+        return True
+
     asunto = f"Consulta de contacto desde Vocari | De: {nombre}"
     cuerpo_mensaje = (
         f"Nombre: {nombre}\n"
@@ -99,14 +101,21 @@ def send_contacto_email(nombre, correo, mensaje):
         print(f"Correo de contacto enviado exitosamente desde {correo}.")
         return True
     except Exception as e:
-        print(f"Error al enviar correo de contacto: {e}")
+        print(f"ERROR AL ENVIAR CORREO DE CONTACTO: {e}")
         return False
 
 
 def send_confirmation_email(nombre, correo, perfil, descripcion, cursos):
     # envia correos de confirmacion (usuario y admin) con los resultados del test
+
+    # si es produccion, omite el envio
+    if settings.IS_PROD_ENV:
+        print("⚠️ Envío de correos de confirmación omitido en Producción (Render).")
+        return True
+
     lista_cursos_html = "".join(f"<li>{c}</li>" for c in cursos)
 
+    # cuerpo del correo al usuario
     asunto_usuario = f"Informe Vocacional | {nombre}"
     cuerpo_html_usuario = f"""
     <html>
@@ -119,7 +128,7 @@ def send_confirmation_email(nombre, correo, perfil, descripcion, cursos):
         <h3>Perfil obtenido: <strong>{perfil}</strong></h3>
         <p>{descripcion}</p>
 
-        <h3>Cursos recomecomendados:</h3>
+        <h3>Cursos recomendados:</h3>
         <ul>{lista_cursos_html}</ul>
 
         <p style="margin-top:20px;">¡Gracias por usar Vocari Project!<br>
@@ -129,6 +138,7 @@ def send_confirmation_email(nombre, correo, perfil, descripcion, cursos):
     </html>
     """
 
+    # cuerpo del correo al administrador
     asunto_admin = f"Nueva evaluación | {perfil} - {nombre}"
     cuerpo_html_admin = f"""
     <html>
@@ -169,7 +179,7 @@ def send_confirmation_email(nombre, correo, perfil, descripcion, cursos):
         )
         msg_admin.attach_alternative(cuerpo_html_admin, "text/html")
 
-        # envio de los dos mensajes en una sola transaccion
+        # envio de los dos mensajes
         connection.send_messages([msg_user, msg_admin])
 
         return True
@@ -178,9 +188,10 @@ def send_confirmation_email(nombre, correo, perfil, descripcion, cursos):
         print(f"ERROR AL ENVIAR EMAIL VOCARI (Django): {e}")
         return False
 
+
 def index(request):
-    # muestra el formulario del test, procesa las respuestas, calcula el perfil
-    # y maneja la persistencia y la comunicacion
+    # vista principal: muestra el test, procesa ajax y guarda resultados
+
     perfil = None
     descripcion = None
     cursos = []
@@ -197,11 +208,11 @@ def index(request):
             nombre_val = data["nombre"]
             correo_val = data["correo"]
 
-            # calculo de perfil
+            # calculo de perfil y descripcion
             perfil = calcular_perfil(data)
             descripcion = " / ".join(DESCRIPCIONES.get(p, "") for p in perfil.split(", "))
 
-            # determinacion de cursos y traducciones
+            # cursos, traducciones y lista unica
             seen = set()
             cursos_con_traduccion = []
             cursos_unicos = []
@@ -236,15 +247,16 @@ def index(request):
                 print(f"Error al guardar la consulta en la base de datos: {e}")
                 db_status = False
 
-            # envio de correo y generacion del mensaje para javascript
+            # envio de correo y mensaje de respuesta
             email_sent = send_confirmation_email(nombre_val, correo_val, perfil, descripcion, cursos_unicos)
 
-            if email_sent and db_status:
-                user_message = "¡Test completado! Tus resultados y guia personalizada han sido enviados a tu correo."
-                status_class = "success"
-            elif not email_sent:
-                user_message = "Test completado pero no pudimos enviar el correo con tus resultados. Revisa tu direccion y contactanos."
-                status_class = "warning"
+            if db_status:
+                if email_sent:
+                    user_message = "¡Test completado! Tus resultados y guía personalizada han sido enviados a tu correo."
+                    status_class = "success"
+                else:
+                    user_message = "Test completado pero no pudimos enviar el correo con tus resultados. Revisa tu dirección y contáctanos."
+                    status_class = "warning"
             else:
                 user_message = "Test completado. Hubo un error al guardar tu consulta en el sistema. Contacta a soporte."
                 status_class = "danger"
@@ -263,6 +275,7 @@ def index(request):
                     'status_class': status_class
                 })
 
+            # respuesta normal (no ajax)
             return render(request, "landing/index.html", {
                 "form": form,
                 "perfil": perfil,
@@ -299,14 +312,16 @@ def index(request):
 
 
 def inscribir(request):
-    # procesa la inscripcion a cursos seleccionados y envia los correos
+    # procesa la inscripcion a cursos, envia correos y redirige
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
     if request.method == "POST":
         cursos_seleccionados = request.POST.getlist("cursos")
         nombre = request.POST.get("nombre")
         correo = request.POST.get("correo")
 
+        # preparacion de los cuerpos de email (usuario y admin)
         lista_html = "".join(f"<li>{c}</li>" for c in cursos_seleccionados)
-
         asunto_u = f"Inscripción confirmada | {nombre}"
         cuerpo_u = f"""
         <html>
@@ -339,46 +354,79 @@ def inscribir(request):
         </html>
         """
 
-        try:
-            connection = get_connection()
+        email_sent = False
 
-            # mensaje para el usuario
-            msg_user = EmailMultiAlternatives(
-                asunto_u,
-                strip_tags(cuerpo_u),
-                settings.DEFAULT_FROM_EMAIL,
-                [correo],
-                connection=connection
-            )
-            msg_user.attach_alternative(cuerpo_u, "text/html")
+        # si no es produccion, intenta el envio
+        if not settings.IS_PROD_ENV:
+            try:
+                connection = get_connection()
 
-            # mensaje para el administrador
-            msg_admin = EmailMultiAlternatives(
-                asunto_a,
-                strip_tags(cuerpo_a),
-                settings.DEFAULT_FROM_EMAIL,
-                [settings.DEFAULT_FROM_EMAIL],
-                connection=connection
-            )
-            msg_admin.attach_alternative(cuerpo_a, "text/html")
+                # mensaje para el usuario
+                msg_user = EmailMultiAlternatives(
+                    asunto_u, strip_tags(cuerpo_u), settings.DEFAULT_FROM_EMAIL, [correo], connection=connection
+                )
+                msg_user.attach_alternative(cuerpo_u, "text/html")
 
-            connection.send_messages([msg_user, msg_admin])
+                # mensaje para el administrador
+                msg_admin = EmailMultiAlternatives(
+                    asunto_a, strip_tags(cuerpo_a), settings.DEFAULT_FROM_EMAIL, [settings.DEFAULT_FROM_EMAIL], connection=connection
+                )
+                msg_admin.attach_alternative(cuerpo_a, "text/html")
 
-            print("✅ Correos de inscripción enviados (usuario y admin).")
+                connection.send_messages([msg_user, msg_admin])
 
-        except Exception as e:
-            print(f"❌ Error al enviar correos de inscripción: {e}")
+                print("✅ Correos de inscripción enviados (usuario y admin).")
+                email_sent = True
 
-        user_message = f"¡Inscripción recibida con éxito! Te contactaremos en {correo}."
+            except Exception as e:
+                print(f"❌ Error al enviar correos de inscripción: {e}")
+        else:
+            # si es produccion, asume el exito
+            print("⚠️ Envío de correos de inscripción omitido en Producción (Render).")
+            email_sent = True
+
+        if email_sent:
+            user_message = f"¡Inscripción recibida con éxito! Serás redirigido."
+            success_status = True
+            http_status = 200
+        else:
+            user_message = f"Inscripción recibida, pero hubo un error al enviar la confirmación a {correo}."
+            success_status = False
+            http_status = 400
+
+        # si es ajax: devuelve json y guarda datos en sesion para la redireccion
+        if is_ajax:
+            # guarda los datos en la sesion temporalmente
+            request.session['inscripcion_data'] = {
+                'nombre': nombre,
+                'correo': correo,
+                'cursos': cursos_seleccionados,
+                'user_message': user_message,
+                'success_status': success_status
+            }
+            # devuelve la url de destino
+            return JsonResponse({
+                "success": success_status,
+                "user_message": user_message,
+                "redirect_url": request.path # /inscribir/
+            }, status=http_status)
+
+        # si no es ajax (redireccion normal)
+    # intenta obtener los datos guardados en la sesion
+    inscripcion_data = request.session.pop('inscripcion_data', None)
+
+    if inscripcion_data:
+        # renderiza el template html usando los datos de la sesion
         return render(request, "landing/inscribir.html", {
-            "cursos": cursos_seleccionados,
-            "nombre": nombre,
-            "correo": correo,
-            "success_message": user_message,
-            "success_status": True
+            "cursos": inscripcion_data['cursos'],
+            "nombre": inscripcion_data['nombre'],
+            "correo": inscripcion_data['correo'],
+            "success_message": inscripcion_data['user_message'],
+            "success_status": inscripcion_data['success_status']
         })
-
-    return render(request, "landing/inscribir.html", {})
+    else:
+        # muestra el template vacío
+        return render(request, "landing/inscribir.html", {})
 
 
 def registro(request):
@@ -400,7 +448,7 @@ def login_redirect_view(request):
         # si es admin va al dashboard
         return redirect('dashboard')
     else:
-        # si no es amdin
+        # si no es admin
         return redirect('no_admin_landing')
 
 
@@ -426,11 +474,13 @@ def contacto(request):
             correo = form.cleaned_data['correo']
             mensaje = form.cleaned_data['mensaje']
 
-            if send_contacto_email(nombre, correo, mensaje):
-                success_message = "¡Mensaje enviado con exito! Te responderemos pronto."
+            email_sent = send_contacto_email(nombre, correo, mensaje)
+
+            if email_sent:
+                success_message = "¡Mensaje enviado con éxito! Te responderemos pronto."
                 form = ContactoForm()
             else:
-                success_message = "Hubo un error al enviar el mensaje. Intenta mas tarde."
+                success_message = "Hubo un error al enviar el mensaje. Intenta más tarde."
 
     else:
         form = ContactoForm()
@@ -443,7 +493,7 @@ def contacto(request):
 
 @staff_member_required(login_url='login')
 def listado_consultas(request):
-    # muestra un listado de todas las consultas guardadas, ordenadas por fecha
+    # muestra un listado de todas las consultas guardadas
     try:
         consultas = Consulta.objects.all().order_by('-id')
         return render(request, "landing/listado_consultas.html", {"consultas": consultas})
@@ -482,7 +532,7 @@ def editar_consulta(request, consulta_id):
 
 @staff_member_required(login_url='login')
 def eliminar_consulta(request, consulta_id):
-    # maneja la eliminacion de una consulta especifica
+    # maneja la eliminacion de una consulta
     consulta = get_object_or_404(Consulta, id=consulta_id)
     is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
 
@@ -507,6 +557,7 @@ def dashboard(request):
 
 
 class TraduccionAPIView(views.APIView):
+    # api para obtener traducciones
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
@@ -515,14 +566,14 @@ class TraduccionAPIView(views.APIView):
 
         if not texto_a_traducir:
             return Response(
-                {"error": "El parametro 'texto' es obligatorio para la traduccion."},
+                {"error": "El parámetro 'texto' es obligatorio para la traducción."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         traduccion = get_translation(texto_a_traducir, target_lang='en')
 
         if traduccion is None:
             return Response(
-                {"error": "No se pudo obtener la traduccion de la api externa."},
+                {"error": "No se pudo obtener la traducción de la API externa."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
 
@@ -538,6 +589,7 @@ class ConsultaViewSet(viewsets.ModelViewSet):
     serializer_class = ConsultaSerializer
 
     def get_permissions(self):
+        # permisos: solo admin para crear/editar/borrar
         if self.action in ['list', 'retrieve']:
             permission_classes = [AllowAny]
         else:
@@ -546,11 +598,13 @@ class ConsultaViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
+        # calcula el perfil antes de crear
         data = serializer.validated_data
         perfil_calculado = calcular_perfil(data)
         serializer.save(perfil_obtenido=perfil_calculado)
 
     def perform_update(self, serializer):
+        # calcula el perfil antes de actualizar
         data = serializer.validated_data
         perfil_calculado = calcular_perfil(data)
         serializer.save(perfil_obtenido=perfil_calculado)

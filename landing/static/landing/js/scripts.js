@@ -1,39 +1,75 @@
-// funcion para manejar el estado del botón (deshabilitar/habilitar)
-function toggleButtonState(button, isLoading, originalText) {
-    if (isLoading) {
+function displayFlashMessage(message, category) {
+    const flashContainer = document.querySelector('#alert-container');
+    if (!flashContainer) {
+        console.warn('Contenedor de mensajes flash no encontrado. Mostrando mensaje en consola:', message);
+        return;
+    }
+
+    // limpia mensajes anteriores
+    flashContainer.innerHTML = '';
+
+    let title = '';
+    if (category === 'success') title = '¡Éxito!';
+    else if (category === 'warning') title = 'Atención:';
+    else title = 'Error:';
+
+    const alertHtml = `
+        <div class="alert alert-${category} alert-dismissible fade show" role="alert">
+            <strong>${title}</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    flashContainer.innerHTML = alertHtml;
+    flashContainer.scrollIntoView({ behavior: 'smooth' });
+
+}
+
+function toggleButtonState(button, disable, originalText) {
+    if (disable) {
+        // solo guarda el texto original si no existe
+        if (!button.getAttribute('data-original-text')) {
+             button.setAttribute('data-original-text', originalText);
+        }
         button.disabled = true;
-        button.classList.add('loading-state');
-        button.textContent = 'Enviando...';
+        button.textContent = 'Procesando...';
     } else {
+        const textToRestore = button.getAttribute('data-original-text') || originalText;
         button.disabled = false;
-        button.classList.remove('loading-state');
-        // restaura el texto original
-        button.textContent = originalText;
+        button.textContent = textToRestore;
+        // limpia el atributo al restaurar
+        button.removeAttribute('data-original-text');
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.querySelector('#formulario-principal');
-    const alertContainer = document.querySelector('#alert-container');
 
-    if (form) {
-        const submitButton = form.querySelector('.btn-enviar');
+document.addEventListener('DOMContentLoaded', function() {
+    const formPrincipal = document.querySelector('#formulario-principal');
+    const alertContainer = document.querySelector('#alert-container'); // contenedor de mensajes
+
+    // --- manejo del formulario principal (test vocacional) ---
+    if (formPrincipal) {
+        const submitButton = formPrincipal.querySelector('.btn-enviar');
+        // usa el texto actual del boton como respaldo
         let originalTextPrincipal = submitButton ? submitButton.textContent : 'ENVIAR';
 
-        form.addEventListener('submit', async (e) => {
+        formPrincipal.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            // deshabilitar boton "enviar"
             if (submitButton) toggleButtonState(submitButton, true, originalTextPrincipal);
 
             document.querySelectorAll('p.error').forEach(p => p.remove());
             alertContainer.innerHTML = '';
 
-            const formData = new FormData(form);
-            const url = form.action || window.location.href;
+            const formData = new FormData(formPrincipal);
+            const url = formPrincipal.action || window.location.href;
             const csrfToken = formData.get('csrfmiddlewaretoken');
 
+            let response = null;
+            let data = null;
+
             try {
-                const response = await fetch(url, {
+                response = await fetch(url, {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -42,44 +78,38 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
 
+                data = await response.json();
+
                 if (response.ok) {
-                    const data = await response.json();
-                    displayFlashMessage(data.user_message, data.status_class);
+                    // solo mostramos un mensaje si no fue exitoso
+                    if (data.status_class !== 'success') {
+                        displayFlashMessage(data.user_message, data.status_class);
+                    }
+
                     actualizarResultados(data);
+
                 } else {
-                    const errorData = await response.json();
-                    displayFlashMessage(errorData.user_message || 'El formulario contiene errores.', 'danger');
-                    mostrarErrores(errorData);
+                    displayFlashMessage(data.user_message || 'El formulario contiene errores.', 'danger');
+                    mostrarErrores(data);
                 }
 
             } catch (error) {
                 console.error('Error al enviar el formulario (Fetch):', error);
-                displayFlashMessage('Ocurrió un error de conexión. Por favor, inténtalo de nuevo.', 'danger');
+                displayFlashMessage('Ocurrió un error de conexión. Por favor, intentalo de nuevo.', 'danger');
             } finally {
+                // habilitar boton "enviar" al finalizar el ajax
                 if (submitButton) toggleButtonState(submitButton, false, originalTextPrincipal);
             }
         });
     }
+
+    // --- manejo del formulario de contacto ---
+    const formContactar = document.getElementById('form-contactar');
+    if (formContactar) {
+    }
+
 });
 
-function displayFlashMessage(message, type) {
-    const alertContainer = document.querySelector('#alert-container');
-    if (!alertContainer) return;
-
-    let title = '';
-    if (type === 'success') title = '¡Éxito!';
-    else if (type === 'warning') title = 'Atención:';
-    else title = 'Error:';
-
-    const alertHtml = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            <strong>${title}</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    `;
-    alertContainer.innerHTML = alertHtml;
-    alertContainer.scrollIntoView({ behavior: 'smooth' });
-}
 
 function actualizarResultados(data) {
     const perfilContainer = document.querySelector('.resultado-item:first-child .resultado-contenido');
@@ -108,6 +138,7 @@ function actualizarResultados(data) {
         if (data.cursos && data.cursos.length > 0) {
             cursosHTML += '<h3>Los cursos que te recomendamos son:</h3>';
 
+            // formulario de inscripcion
             cursosHTML += `<form action="/inscribir/" method="post" id="form-inscribir">`;
             cursosHTML += `<input type="hidden" name="csrfmiddlewaretoken" value="${data.csrf_token || ''}">`;
             cursosHTML += `<input type="hidden" name="nombre" value="${data.nombre || ''}">`;
@@ -126,7 +157,7 @@ function actualizarResultados(data) {
             });
 
             cursosHTML += '</div>';
-            cursosHTML += '<button type="submit" class="btn-inscribir" data-original-text="INSCRIBIRME">INSCRIBIRME</button>';
+            cursosHTML += '<button type="submit" class="btn-inscribir">INSCRIBIRME</button>';
             cursosHTML += '</form>';
 
         } else {
@@ -135,6 +166,7 @@ function actualizarResultados(data) {
 
         cursosContainer.innerHTML = cursosHTML;
 
+        // --- logica del formulario de inscripcion ---
         const formInscribir = document.querySelector('#form-inscribir');
 
         if (formInscribir) {
@@ -142,19 +174,23 @@ function actualizarResultados(data) {
                 e.preventDefault();
 
                 const submitButton = formInscribir.querySelector('.btn-inscribir');
-                const originalTextInscribir = submitButton.getAttribute('data-original-text');
+                // obtener texto original del boton
+                const originalTextInscribir = submitButton.getAttribute('data-original-text') || submitButton.textContent;
 
+                // deshabilitar boton "inscribirme"
                 if (submitButton) {
                     toggleButtonState(submitButton, true, originalTextInscribir);
-                    submitButton.textContent = 'Procesando...';
                 }
+
+                let response = null;
+                let data = null;
 
                 const formData = new FormData(formInscribir);
                 const csrfToken = formData.get('csrfmiddlewaretoken');
                 const url = formInscribir.action;
 
                 try {
-                    const response = await fetch(url, {
+                    response = await fetch(url, {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -163,25 +199,29 @@ function actualizarResultados(data) {
                         }
                     });
 
-                    const data = await response.json();
+                    data = await response.json();
 
-                    if (response.ok) {
-                        displayFlashMessage(data.user_message || 'Inscripción procesada correctamente.', 'success');
+                    if (response.ok && data.success) {
+                        // redireccion inmediata
+                        window.location.href = data.redirect_url;
+                        return;
+
                     } else {
-                        displayFlashMessage(data.user_message || 'Error al procesar la inscripción.', 'danger');
+                        // muestra mensaje de error si la inscripcion falla
+                        displayFlashMessage(data.user_message || 'Error al procesar la inscripcion.', 'danger');
                     }
 
                 } catch (error) {
                     console.error('Error al enviar el formulario (Fetch):', error);
-                    displayFlashMessage('Ocurrió un error de conexión al inscribir. Por favor, inténtalo de nuevo.', 'danger');
+                    displayFlashMessage('Ocurrió un error de conexión al inscribir. Por favor, intentalo de nuevo.', 'danger');
                 } finally {
-                    if (submitButton) {
+                    // habilitar boton "inscribirme" solo si fallo y no hubo redireccion
+                    if (submitButton && (!response || !response.ok || !data || !data.success)) {
                         toggleButtonState(submitButton, false, originalTextInscribir);
                     }
                 }
             });
         }
-
         document.getElementById('resultado')?.scrollIntoView({ behavior: 'smooth' });
     }
 }
@@ -189,6 +229,7 @@ function actualizarResultados(data) {
 function mostrarErrores(errorData) {
     for (const [campo, errores] of Object.entries(errorData.errors || {})) {
 
+        // saca errores previos
         document.querySelectorAll(`[name="${campo}"]`).forEach(input => {
             input.closest('.campo')?.querySelectorAll('p.error').forEach(p => p.remove());
             input.closest('.pregunta')?.querySelectorAll('p.error').forEach(p => p.remove());
