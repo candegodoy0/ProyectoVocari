@@ -1,64 +1,171 @@
-# 🎓 Vocari – Simulador de Orientación Vocacional
+# **🎓 Vocari – Plataforma de Orientación Vocacional Inteligente**
 
-Vocari es una plataforma web desarrollada con **Django**, diseñada para ayudar a las personas a descubrir su perfil vocacional mediante un test interactivo, análisis automático y recomendaciones personalizadas de cursos.  
+Vocari es una aplicación web desarrollada en **Django + PostgreSQL**, diseñada para ayudar a los usuarios a descubrir su perfil vocacional mediante un test breve, dinámico y altamente preciso.  
+El sistema analiza las respuestas, determina un perfil profesional, traduce el resultado automáticamente al inglés mediante una API externa y sugiere cursos relacionados.
 
-Incluye un sistema completo de administración, métricas internas, API REST y manejo avanzado de formularios con AJAX.
-
----
-
-## [Demo en vivo](https://proyectodjango-z7f4.onrender.com)
-
-*(El envío de correos está deshabilitado en Render por limitaciones del servicio que se utilizo gratuito, pruebas desde local)*
+Incluye un **panel administrativo**, sistema de consultas, API REST, operaciones CRUD completas, validación avanzada de formularios, AJAX, almacenamiento persistente y un backend escalable.
 
 ---
 
-## Funcionalidades principales
+## [Proyecto Desplegado](https://proyectodjango-z7f4.onrender.com)
 
-### ✔ Test vocacional inteligente  
-- 5 preguntas clave basadas en intereses reales.  
-- Determina un perfil entre: **Tecnológico**, **Creativo/Artístico**, **Social/Humanístico** o **Científico/Analítico**.  
-- Genera una descripción precisa y personalizada.  
-- Traducción automática del resultado y de los cursos al inglés.
+> ⚠️ Los correos solo funcionan en modo local (restricción de Render versión gratuita).
 
-### ✔ Recomendación de cursos  
-- Lista de cursos sugeridos según el perfil.  
-- Traducción automática (API externa).  
-- Opción de inscripción con envío de email (modo local).
+---
 
-### ✔ Panel administrativo  
-- Dashboard para administradores.  
-- Listado de consultas con búsqueda, filtros y ordenamiento.  
-- Edición de resultados (recalculando perfil).  
-- Eliminación con modal de confirmación (AJAX).
+# ** ¿Qué es Vocari?**
+Vocari es un sistema completo de orientación vocacional que permite:
 
-### ✔ Formularios avanzados (AJAX)  
-- Validación en tiempo real.  
-- Mensajes dinámicos.  
-- Bloqueos de botones, loaders, gestión completa UX/UI.
+- Realizar un test de 5 preguntas  
+- Recibir un perfil vocacional automático  
+- Ver una descripción detallada  
+- Ver cursos sugeridos  
+- Ver la traducción al inglés del resultado  
+- Guardar la consulta en la base de datos  
+- Que el administrador gestione todas las consultas desde un panel  
 
-### ✔ API REST  
-Creada con Django REST Framework:  
+Todo esto respaldado por un backend completo orientado a producción.
+
+---
+
+# **Lógica del Test Vocacional**
+Vocari clasifica al usuario en **4 perfiles principales**:
+
+1. **Tecnológico**  
+2. **Creativo**  
+3. **Social**  
+4. **Analítico**
+
+Las respuestas de cada pregunta suman puntos para cada perfil.  
+El sistema selecciona automáticamente el perfil con mayor puntaje.
+
+Luego:
+
+- Genera una **descripción personalizada**
+- Llama a la API **MyMemory** para traducirla al inglés
+- Genera una lista de **cursos recomendados**
+- Traduce también esos cursos
+
+Todo esto ocurre en **tiempo real**.
+
+---
+
+# **Consumo de API Externa**
+Vocari emplea la API de traducción **MyMemory** para generar traducciones automáticas del resultado y de los cursos sugeridos.
+
+**URL utilizada:**
+`https://api.mymemory.translated.net/get?q=<TEXTO>&langpair=es|en`
+
+Incluye:
+
+- Peticiones con `requests`
+- Manejo de errores
+- Fallback en caso de fallo de API
+- Optimización del texto antes de enviarlo  
+
+---
+
+# **Funcionalidades completas**
+
+## **✔ Test Vocacional**
+- 5 preguntas dinámicas  
+- Envío mediante POST  
+- Análisis automático del perfil  
+- Respuesta estructurada  
+- Persistencia en base de datos  
+- Traducción automática del perfil  
+- Traducción automática de los cursos  
+
+---
+
+## **✔ Recomendación de Cursos**
+Basado en el perfil detectado.  
+Cada curso se traduce al inglés usando la API MyMemory.
+
+---
+
+## **✔ Formulario de Inscripción**
+- Validación  
+- Guardado en base de datos  
+- Envío de email en local  
+- Confirmación visual  
+
+---
+
+## **✔ CRUD Completo de Consultas (Panel Admin)**
+El staff puede:
+
+- Ver todas las consultas  
+- Filtrar  
+- Editar  
+- Recalcular el perfil automáticamente  
+- Eliminar usando modal + AJAX  
+- Ver detalles individuales  
+
+---
+
+## **✔ Panel Administrativo**
+Incluye:
+
+- Dashboard  
+- Listado de consultas  
+- Detalle individual  
+- Edición  
+- Eliminación AJAX  
+- Actualización dinámica  
+
+---
+
+## **✔ API REST (Django REST Framework)**
+
+Endpoints:
+
 - `GET /api/consultas/`  
 - `POST /api/consultas/`  
 - `PUT /api/consultas/<id>/`  
-- `DELETE /api/consultas/<id>/`
+- `DELETE /api/consultas/<id>/`  
 
 ---
 
-## Tecnologías utilizadas
+# **🛠 Tecnologías utilizadas**
 
-**Backend**
+## **Backend**
 - Python 3.12  
-- Django 5.2.6  
+- Django 5.0+  
 - Django REST Framework  
 - PostgreSQL  
 - Whitenoise  
-- MyMemory Translation API  
+- MyMemory API  
 
-**Frontend**
-- HTML + Django Templates  
-- CSS (custom)  
+## **Frontend**
+- HTML5  
+- CSS3  
 - Bootstrap 5  
-- Fetch API / AJAX  
-- Modales dinámicos (Bootstrap)
-🏠 Home / Inicio
+- JavaScript (AJAX, Fetch API)  
+- Django Templates  
+
+---
+
+# **Capturas de Pantalla**
+
+
+# Home  
+[Ver captura](./img/home.png)
+
+# Test Vocacional  
+[Ver captura](./img/test.png)
+
+# Resultado + Cursos  
+[Ver captura](./img/resultado.png)
+
+# Formulario de Inscripción  
+[Ver captura](./img/inscripcion.png)
+
+# Panel Administrativo  
+[Ver captura](./img/panel.png)
+
+---
+
+# ** Autora**
+**Candela Godoy**  
+Desarrolladora Backend / FullStack Jr  
