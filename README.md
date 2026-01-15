@@ -7,7 +7,7 @@ Incluye un **panel administrativo**, sistema de consultas, API REST, operaciones
 
 ---
 
-## [Proyecto Desplegado](https://proyectodjango-z7f4.onrender.com)
+## [Proyecto Desplegado y disponible para uso online](https://proyectodjango-z7f4.onrender.com)
 
 > ⚠️ Los correos solo funcionan en modo local (restricción de Render versión gratuita).
 
@@ -52,7 +52,8 @@ Todo esto ocurre en **tiempo real**.
 # **Consumo de API Externa**
 Vocari emplea la API de traducción **MyMemory** para generar traducciones automáticas del resultado y de los cursos sugeridos.
 
-**[URL utilizada](https://api.mymemory.translated.net/get?q=<TEXTO>&langpair=es|en)
+**URL utilizada:**  
+[https://api.mymemory.translated.net/get?q=%3CTEXTO%3E&langpair=es|en](https://api.mymemory.translated.net/get?q=%3CTEXTO%3E&langpair=es|en)
 
 Incluye:
 
