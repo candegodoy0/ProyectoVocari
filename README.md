@@ -13,20 +13,6 @@ Incluye un **panel administrativo**, sistema de consultas, API REST, operaciones
 
 ---
 
-# ** Vocari** es un sistema completo de orientación vocacional que permite:
-
-- Realizar un test de 5 preguntas  
-- Recibir un perfil vocacional automático  
-- Ver una descripción detallada  
-- Ver cursos sugeridos  
-- Ver la traducción al inglés del resultado  
-- Guardar la consulta en la base de datos  
-- Que el administrador gestione todas las consultas desde un panel  
-
-Todo esto respaldado por un backend completo orientado a producción.
-
----
-
 # **Lógica del Test Vocacional**
 Vocari clasifica al usuario en **4 perfiles principales**:
 
