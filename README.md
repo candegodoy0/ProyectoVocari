@@ -13,8 +13,7 @@ Incluye un **panel administrativo**, sistema de consultas, API REST, operaciones
 
 ---
 
-# ** ¿Qué es Vocari?**
-Vocari es un sistema completo de orientación vocacional que permite:
+# ** Vocari** es un sistema completo de orientación vocacional que permite:
 
 - Realizar un test de 5 preguntas  
 - Recibir un perfil vocacional automático  
@@ -53,8 +52,7 @@ Todo esto ocurre en **tiempo real**.
 # **Consumo de API Externa**
 Vocari emplea la API de traducción **MyMemory** para generar traducciones automáticas del resultado y de los cursos sugeridos.
 
-**URL utilizada:**
-`https://api.mymemory.translated.net/get?q=<TEXTO>&langpair=es|en`
+**[URL utilizada](https://api.mymemory.translated.net/get?q=<TEXTO>&langpair=es|en)
 
 Incluye:
 
@@ -127,7 +125,7 @@ Endpoints:
 
 ---
 
-# **🛠 Tecnologías utilizadas**
+# **Tecnologías utilizadas**
 
 ## **Backend**
 - Python 3.12  
@@ -148,7 +146,6 @@ Endpoints:
 
 # **Capturas de Pantalla**
 
-
 # Home  
 [Ver captura](./img/home.png)
 
@@ -166,6 +163,6 @@ Endpoints:
 
 ---
 
-# ** 👩‍💻 Autora**
+# 👩‍💻 Autora
 **Candela Godoy**  
 Desarrolladora Backend / FullStack Jr  
