@@ -166,6 +166,6 @@ Endpoints:
 
 ---
 
-# ** Autora**
+# ** 👩‍💻 Autora**
 **Candela Godoy**  
 Desarrolladora Backend / FullStack Jr  
