@@ -38,8 +38,7 @@ Todo esto ocurre en **tiempo real**.
 # **Consumo de API Externa**
 Vocari emplea la API de traducción **MyMemory** para generar traducciones automáticas del resultado y de los cursos sugeridos.
 
-**URL utilizada:**  
-[https://api.mymemory.translated.net/get?q=%3CTEXTO%3E&langpair=es|en](https://api.mymemory.translated.net/get?q=%3CTEXTO%3E&langpair=es|en)
+**URL utilizada:** [https://api.mymemory.translated.net/get?q=%3CTEXTO%3E&langpair=es|en](https://api.mymemory.translated.net/get?q=%3CTEXTO%3E&langpair=es|en)
 
 Incluye:
 
