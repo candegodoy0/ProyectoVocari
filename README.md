@@ -61,3 +61,4 @@ Creada con Django REST Framework:
 - Bootstrap 5  
 - Fetch API / AJAX  
 - Modales dinámicos (Bootstrap)
+🏠 Home / Inicio
