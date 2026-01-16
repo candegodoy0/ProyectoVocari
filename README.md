@@ -132,6 +132,8 @@ Endpoints:
 
 # **Capturas de Pantalla**
 
+A continuación se muestran **algunas vistas** representativas de la página:
+
 # Home  
 [Ver captura](./img/home.png)
 
