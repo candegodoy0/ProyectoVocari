@@ -83,13 +83,19 @@ WSGI_APPLICATION = 'mi_sitio.wsgi.application'
 # Database
 
 DATABASES = {
-'default': dj_database_url.config(
-    default='postgresql://proyectodjango_ojaa_user:i2laqK4UoZokda7LRTmQJw7NAdbLnHub@dpg-d4dsag8dl3ps73dj14jg-a.oregon-postgres.render.com/proyectodjango_ojaa',
-    conn_max_age=600,
-ssl_require=True
-)
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'bdprojectvocari',
+        'USER': 'candegodoy',
+        'PASSWORD': '8awxX98qjr2Vfdfd2IUQ2lFZlzNqmWvy',
+        'HOST': 'dpg-d5kq6k3e5dus73fl4pv0-a.oregon-postgres.render.com',
+        'PORT': '5432',
+        'CONN_MAX_AGE': 600,
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
+    }
 }
-
 
 # Password validation
 
