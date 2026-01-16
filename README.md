@@ -132,7 +132,7 @@ Endpoints:
 
 # **Capturas de Pantalla**
 
-A continuación se muestran **algunas vistas** representativas de la página:
+A continuación se muestran solo **algunas vistas** representativas de la página:
 
 # Home  
 [Ver captura](./img/home.png)
@@ -143,11 +143,22 @@ A continuación se muestran **algunas vistas** representativas de la página:
 # Resultado + Cursos  
 [Ver captura](./img/resultado.png)
 
-# Formulario de Inscripción  
-[Ver captura](./img/inscripcion.png)
+# Sección Sobre Nosotros
+[Ver captura](./img/sobre-nosotros.png)
+
+# Sección Contacto
+[Ver captura](./img/contacto.png)
 
 # Panel Administrativo  
 [Ver captura](./img/panel.png)
+
+# Gestión de Consultas 
+[Ver captura](./img/listado-consultas.png)
+
+# Perfil / Autenticación 
+[Ver captura](./img/login.png) 
+# Registro
+[Ver captura](./img/registro.png)
 
 ---
 
